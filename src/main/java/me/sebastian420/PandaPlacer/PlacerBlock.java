@@ -20,7 +20,10 @@ import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RotationCalculator;
 import net.minecraft.util.math.RotationPropertyHelper;
+import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
+
+import static me.sebastian420.PandaPlacer.PandaPlacer.PLACER_ITEM;
 
 
 public class PlacerBlock extends DispenserBlock implements PolymerBlock {
@@ -33,6 +36,12 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
     public boolean handleMiningOnServer(ItemStack tool, BlockState state, BlockPos pos, ServerPlayerEntity player) {
         return false;
     }
+
+    @Override
+    public ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state) {
+        return new ItemStack(PLACER_ITEM);
+    }
+
 
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
