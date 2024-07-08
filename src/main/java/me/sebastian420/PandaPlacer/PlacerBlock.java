@@ -34,30 +34,34 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
 
 
     public static final IntProperty EXTRA_FACING = Properties.ROTATION;
+    public static final IntProperty NESW_FACING = Properties.AGE_15;
+
 
     Direction RotationToFacing(Integer rotation){
         return switch (rotation) {
-            case 0 -> Direction.SOUTH;
-            case 4 -> Direction.WEST;
-            case 8 -> Direction.NORTH;
-            case 12 -> Direction.EAST;
+            case 0, 3 -> Direction.SOUTH;
+            case 4, 7 -> Direction.WEST;
+            case 8 , 11 -> Direction.NORTH;
+            case 12 , 15 -> Direction.EAST;
             default -> Direction.NORTH;
         };
     }
 
     public PlacerBlock(Settings settings) {
         super(settings);
-        this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(TRIGGERED, false).with(EXTRA_FACING, 0));
+        this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(TRIGGERED, false).with(EXTRA_FACING, 0).with(NESW_FACING,0));
     }
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
-        return this.getDefaultState().with(FACING, ctx.getPlayerLookDirection().getOpposite()).with(EXTRA_FACING, RotationPropertyHelper.fromDirection(ctx.getHorizontalPlayerFacing()));
+        return this.getDefaultState().with(FACING, ctx.getPlayerLookDirection().getOpposite())
+                .with(EXTRA_FACING, RotationPropertyHelper.fromYaw(ctx.getPlayerYaw()))
+                .with(NESW_FACING, RotationPropertyHelper.fromDirection(ctx.getHorizontalPlayerFacing().getOpposite()));
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING, TRIGGERED, EXTRA_FACING);
+        builder.add(FACING, TRIGGERED, EXTRA_FACING, NESW_FACING);
     }
 
     @Override
@@ -113,15 +117,15 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                         if(state.get(FACING) != Direction.UP && state.get(FACING) != Direction.DOWN){
                             blockState = blockState.with(Properties.HORIZONTAL_FACING, state.get(FACING).getOpposite());
                         } else {
-                            blockState = blockState.with(Properties.HORIZONTAL_FACING, RotationToFacing(state.get(EXTRA_FACING)));
+                            blockState = blockState.with(Properties.HORIZONTAL_FACING, RotationToFacing(state.get(NESW_FACING)));
                         }
                     }
 
                     if (blockState.getProperties().contains(Properties.ROTATION)) {
                         if (blockState.isIn(BlockTags.BANNERS)) {
-                            blockState = blockState.with(Properties.ROTATION, RotationPropertyHelper.fromDirection(RotationToFacing(state.get(EXTRA_FACING)).getOpposite()));
+                            blockState = blockState.with(Properties.ROTATION, (state.get(EXTRA_FACING) + 8) % 16);
                         } else {
-                            blockState = blockState.with(Properties.ROTATION, RotationPropertyHelper.fromDirection(RotationToFacing(state.get(EXTRA_FACING))));
+                            blockState = blockState.with(Properties.ROTATION, state.get(EXTRA_FACING));
                         }
                     }
 
