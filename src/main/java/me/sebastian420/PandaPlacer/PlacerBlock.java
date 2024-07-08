@@ -4,6 +4,7 @@ import eu.pb4.polymer.core.api.block.PolymerBlock;
 import net.minecraft.block.*;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.BlockFace;
 import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.block.enums.SlabType;
@@ -104,83 +105,121 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
 
             if (itemStack.getItem() instanceof BlockItem) {
 
-                if (world.getBlockState(infront).isReplaceable()) {
-                    Block block = ((BlockItem) itemStack.getItem()).getBlock();
-                    BlockState blockState = block.getDefaultState();
-                    BlockSoundGroup soundGroup = block.getDefaultState().getSoundGroup();
-                    SoundEvent placeSound = soundGroup.getPlaceSound();
+                Block block = ((BlockItem) itemStack.getItem()).getBlock();
+                BlockState blockState = block.getDefaultState();
+                BlockSoundGroup soundGroup = block.getDefaultState().getSoundGroup();
+                SoundEvent placeSound = soundGroup.getPlaceSound();
 
-                    //Handle properties
-                    if (blockState.getProperties().contains(Properties.FACING)) {
-                        blockState = blockState.with(Properties.FACING, state.get(FACING));
-                    }
+                //Handle properties
+                if (blockState.getProperties().contains(Properties.FACING)) {
+                    blockState = blockState.with(Properties.FACING, state.get(FACING));
+                }
 
-                    if (blockState.getProperties().contains(Properties.HORIZONTAL_FACING)) {
-                        if(state.get(FACING) != Direction.UP && state.get(FACING) != Direction.DOWN){
-                            blockState = blockState.with(Properties.HORIZONTAL_FACING, state.get(FACING).getOpposite());
-                        } else {
-                            blockState = blockState.with(Properties.HORIZONTAL_FACING, RotationToFacing(state.get(NESW_FACING)));
-                        }
-                    }
-
-                    if (blockState.getProperties().contains(Properties.ROTATION)) {
-                        if (blockState.isIn(BlockTags.BANNERS)) {
-                            blockState = blockState.with(Properties.ROTATION, (state.get(EXTRA_FACING) + 8) % 16);
-                        } else {
-                            blockState = blockState.with(Properties.ROTATION, state.get(EXTRA_FACING));
-                        }
-                    }
-
-                    if (blockState.getProperties().contains(Properties.HOPPER_FACING) &&
-                        state.get(FACING) != Direction.UP) {
-                        blockState = blockState.with(Properties.HOPPER_FACING, state.get(FACING));
-                    }
-
-                    if (blockState.getProperties().contains(Properties.BLOCK_HALF) &&
-                        (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
-                        if (state.get(FACING) == Direction.UP) {
-                            blockState = blockState.with(Properties.BLOCK_HALF, BlockHalf.TOP);
-                        } else {
-                            blockState = blockState.with(Properties.BLOCK_HALF, BlockHalf.BOTTOM);
-                        }
-                    }
-
-
-                    if (blockState.getProperties().contains(Properties.DOUBLE_BLOCK_HALF) &&
-                            (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
-                        if (state.get(FACING) == Direction.UP) {
-                            blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
-                        } else {
-                            blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
-                        }
-                    }
-
-                    if (blockState.getProperties().contains(Properties.SLAB_TYPE) &&
-                            (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
-                        if (state.get(FACING) == Direction.UP) {
-                            blockState = blockState.with(Properties.SLAB_TYPE, SlabType.BOTTOM);
-                        } else {
-                            blockState = blockState.with(Properties.SLAB_TYPE, SlabType.TOP);
-                        }
-                    }
-
-                    // One final check to make sure state is possible to place
-                    if (blockState.canPlaceAt(world,infront)) {
-                        world.setBlockState(infront, blockState);
-
-                        BlockEntity blockEntity = world.getBlockEntity(infront);
-                        if (blockEntity != null) {
-                            blockEntity.readComponents(itemStack);
-                        }
-
-                        world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        itemStack.setCount(itemStack.getCount() - 1);
+                if (blockState.getProperties().contains(Properties.HORIZONTAL_FACING)) {
+                    if(state.get(FACING) != Direction.UP && state.get(FACING) != Direction.DOWN){
+                        blockState = blockState.with(Properties.HORIZONTAL_FACING, state.get(FACING).getOpposite());
                     } else {
-                        world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                        blockState = blockState.with(Properties.HORIZONTAL_FACING, RotationToFacing(state.get(NESW_FACING)));
                     }
+                }
+
+                if (blockState.getProperties().contains(Properties.ROTATION)) {
+                    if (blockState.isIn(BlockTags.BANNERS)) {
+                        blockState = blockState.with(Properties.ROTATION, (state.get(EXTRA_FACING) + 8) % 16);
+                    } else {
+                        blockState = blockState.with(Properties.ROTATION, state.get(EXTRA_FACING));
+                    }
+                }
+
+                if (blockState.getProperties().contains(Properties.HOPPER_FACING) &&
+                    state.get(FACING) != Direction.UP) {
+                    blockState = blockState.with(Properties.HOPPER_FACING, state.get(FACING));
+                }
+
+                if (blockState.getProperties().contains(Properties.BLOCK_HALF) &&
+                    (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
+                    if (state.get(FACING) == Direction.UP) {
+                        blockState = blockState.with(Properties.BLOCK_HALF, BlockHalf.TOP);
+                    } else {
+                        blockState = blockState.with(Properties.BLOCK_HALF, BlockHalf.BOTTOM);
+                    }
+                }
+
+
+                if (blockState.getProperties().contains(Properties.DOUBLE_BLOCK_HALF) &&
+                        (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
+                    if (state.get(FACING) == Direction.UP) {
+                        blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
+                    } else {
+                        blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
+                    }
+                }
+
+                if (blockState.getProperties().contains(Properties.SLAB_TYPE) &&
+                        (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
+                    if (state.get(FACING) == Direction.UP) {
+                        blockState = blockState.with(Properties.SLAB_TYPE, SlabType.BOTTOM);
+                    } else {
+                        blockState = blockState.with(Properties.SLAB_TYPE, SlabType.TOP);
+                    }
+                }
+
+                if (blockState.getProperties().contains(Properties.BLOCK_FACE)){
+                    blockState = switch (state.get(FACING)) {
+                        case Direction.UP -> blockState.with(Properties.BLOCK_FACE, BlockFace.CEILING);
+                        case Direction.DOWN -> blockState.with(Properties.BLOCK_FACE, BlockFace.FLOOR);
+                        default -> blockState.with(Properties.BLOCK_FACE, BlockFace.WALL);
+                    };
+                }
+
+                if (blockState.getProperties().contains(Properties.AXIS)){
+                    blockState = switch (state.get(FACING)) {
+                        case Direction.WEST, Direction.EAST -> blockState.with(Properties.AXIS, Direction.Axis.X);
+                        case Direction.NORTH, Direction.SOUTH -> blockState.with(Properties.AXIS, Direction.Axis.Z);
+                        case Direction.UP, Direction.DOWN -> blockState.with(Properties.AXIS, Direction.Axis.Y);
+                    };
+                }
+
+                if (blockState.getProperties().contains(Properties.HORIZONTAL_AXIS)){
+                    blockState = switch (RotationToFacing(state.get(NESW_FACING))) {
+                        case Direction.WEST, Direction.EAST -> blockState.with(Properties.HORIZONTAL_AXIS, Direction.Axis.X);
+                        case Direction.NORTH, Direction.SOUTH -> blockState.with(Properties.HORIZONTAL_AXIS, Direction.Axis.Z);
+                        case Direction.UP, Direction.DOWN -> blockState.with(Properties.HORIZONTAL_AXIS, Direction.Axis.X);
+                    };
+                }
+
+
+
+
+
+                //Handle double slab
+                if (blockState.isIn(BlockTags.SLABS)){
+                    BlockState otherState = world.getBlockState(infront);
+                    if (otherState.getBlock() == block) {
+                        SlabType otherSlabType = otherState.get(Properties.SLAB_TYPE);
+                        if (otherSlabType != SlabType.DOUBLE && otherSlabType != blockState.get(Properties.SLAB_TYPE)) {
+                            world.setBlockState(infront, otherState.with(Properties.SLAB_TYPE, SlabType.DOUBLE));
+                            world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                            itemStack.setCount(itemStack.getCount() - 1);
+                            return;
+                        }
+                    }
+                }
+
+                // One final check to make sure state is possible to place
+                if (blockState.canPlaceAt(world,infront) && world.getBlockState(infront).isReplaceable()) {
+                    world.setBlockState(infront, blockState);
+                    BlockEntity blockEntity = world.getBlockEntity(infront);
+                    if (blockEntity != null) {
+                        blockEntity.readComponents(itemStack);
+                    }
+
+                    world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                    itemStack.setCount(itemStack.getCount() - 1);
                 } else {
                     world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
                 }
+
             } else {
                 DispenserBehavior dispenserBehavior = this.getBehaviorForItem(world, itemStack);
                 if (dispenserBehavior != DispenserBehavior.NOOP) {
