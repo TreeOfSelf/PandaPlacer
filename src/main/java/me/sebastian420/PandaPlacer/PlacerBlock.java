@@ -56,7 +56,7 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
     public BlockState getPlacementState(ItemPlacementContext ctx) {
         return this.getDefaultState().with(FACING, ctx.getPlayerLookDirection().getOpposite())
                 .with(EXTRA_FACING, RotationPropertyHelper.fromYaw(ctx.getPlayerYaw()))
-                .with(NESW_FACING, RotationPropertyHelper.fromDirection(ctx.getHorizontalPlayerFacing().getOpposite()));
+                .with(NESW_FACING, RotationPropertyHelper.fromDirection(ctx.getHorizontalPlayerFacing()));
     }
 
     @Override
