@@ -42,7 +42,6 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
         return new ItemStack(PLACER_ITEM);
     }
 
-
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PlacerBlockEntity(pos, state);
