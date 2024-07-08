@@ -6,6 +6,7 @@ import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.DoubleBlockHalf;
+import net.minecraft.block.enums.SlabType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
@@ -102,11 +103,12 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
             BlockPos infront = pos.offset(state.get(FACING));
 
             if (itemStack.getItem() instanceof BlockItem) {
-                Block block = ((BlockItem) itemStack.getItem()).getBlock();
+
                 if (world.getBlockState(infront).isReplaceable()) {
+                    Block block = ((BlockItem) itemStack.getItem()).getBlock();
+                    BlockState blockState = block.getDefaultState();
                     BlockSoundGroup soundGroup = block.getDefaultState().getSoundGroup();
                     SoundEvent placeSound = soundGroup.getPlaceSound();
-                    BlockState blockState = block.getDefaultState();
 
                     //Handle properties
                     if (blockState.getProperties().contains(Properties.FACING)) {
@@ -153,8 +155,17 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                         }
                     }
 
+                    if (blockState.getProperties().contains(Properties.SLAB_TYPE) &&
+                            (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
+                        if (state.get(FACING) == Direction.UP) {
+                            blockState = blockState.with(Properties.SLAB_TYPE, SlabType.BOTTOM);
+                        } else {
+                            blockState = blockState.with(Properties.SLAB_TYPE, SlabType.TOP);
+                        }
+                    }
+
                     // One final check to make sure state is possible to place
-                    if (state.canPlaceAt(world,infront)) {
+                    if (blockState.canPlaceAt(world,infront)) {
                         world.setBlockState(infront, blockState);
 
                         BlockEntity blockEntity = world.getBlockEntity(infront);
