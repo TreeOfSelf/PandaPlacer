@@ -11,6 +11,8 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +21,12 @@ public class PandaPlacer implements ModInitializer {
 	public static BlockEntityType<PlacerBlockEntity> PLACER_BLOCK_ENTITY_TYPE;
 	public static final Block PLACER_BLOCK = new PlacerBlock(Blocks.DISPENSER.getSettings());
 	public static final Item PLACER_ITEM = new PlacerItem(PLACER_BLOCK, new Item.Settings());
+	public static final TagKey<Block> MUST_BE_PLACED_IN_WATER = TagKey.of(RegistryKeys.BLOCK, Identifier.of("panda-placer", "must_be_placed_in_water"));
+	public static final TagKey<Block> MULTI_FACE_GROWTH = TagKey.of(RegistryKeys.BLOCK, Identifier.of("panda-placer", "multi_face_growth"));
+	public static final TagKey<Block> FLIP_BLOCKS = TagKey.of(RegistryKeys.BLOCK, Identifier.of("panda-placer", "flip_blocks"));
 
 
-    public static final Logger LOGGER = LoggerFactory.getLogger("panda-placer");
+	public static final Logger LOGGER = LoggerFactory.getLogger("panda-placer");
 
 	@Override
 	public void onInitialize() {

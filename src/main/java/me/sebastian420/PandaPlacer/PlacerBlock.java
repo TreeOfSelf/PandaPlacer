@@ -4,15 +4,15 @@ import eu.pb4.polymer.core.api.block.PolymerBlock;
 import net.minecraft.block.*;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.enums.BlockFace;
-import net.minecraft.block.enums.BlockHalf;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.block.enums.SlabType;
+import net.minecraft.block.enums.*;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.BlockSoundGroup;
@@ -22,13 +22,14 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 
-import static me.sebastian420.PandaPlacer.PandaPlacer.PLACER_ITEM;
+import static me.sebastian420.PandaPlacer.PandaPlacer.*;
 
 
 public class PlacerBlock extends DispenserBlock implements PolymerBlock {
@@ -38,6 +39,16 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
     public static final IntProperty EXTRA_FACING = Properties.ROTATION;
     public static final IntProperty NESW_FACING = Properties.AGE_15;
 
+    static BlockState applyAllProperties(BlockState fromState, BlockState toState) {
+        for (Property<?> property : fromState.getProperties()) {
+            toState = applyProperty(toState, property, fromState.get(property));
+        }
+        return toState;
+    }
+
+    private static <T extends Comparable<T>> BlockState applyProperty(BlockState state, Property<T> property, Comparable<?> value) {
+        return state.with(property, property.getType().cast(value));
+    }
 
     Direction RotationToFacing(Integer rotation){
         return switch (rotation) {
@@ -111,18 +122,34 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                 SoundEvent placeSound = soundGroup.getPlaceSound();
 
                 //Handle properties
-                if (blockState.getProperties().contains(Properties.FACING)) {
-                    blockState = blockState.with(Properties.FACING, state.get(FACING));
-                }
 
-                if (blockState.getProperties().contains(Properties.HORIZONTAL_FACING)) {
-                    if(state.get(FACING) != Direction.UP && state.get(FACING) != Direction.DOWN){
-                        blockState = blockState.with(Properties.HORIZONTAL_FACING, state.get(FACING).getOpposite());
+                //Facing Property
+                if (blockState.getProperties().contains(Properties.FACING)) {
+                    if (!blockState.isIn(FLIP_BLOCKS)) {
+                        blockState = blockState.with(Properties.FACING, state.get(FACING));
                     } else {
-                        blockState = blockState.with(Properties.HORIZONTAL_FACING, RotationToFacing(state.get(NESW_FACING)));
+                        blockState = blockState.with(Properties.FACING, state.get(FACING).getOpposite());
                     }
                 }
 
+                //Horizontal Facing
+                if (blockState.getProperties().contains(Properties.HORIZONTAL_FACING)) {
+                    if(state.get(FACING) != Direction.UP && state.get(FACING) != Direction.DOWN){
+                        if (!blockState.isIn(FLIP_BLOCKS)) {
+                            blockState = blockState.with(Properties.HORIZONTAL_FACING, state.get(FACING).getOpposite());
+                        } else {
+                            blockState = blockState.with(Properties.HORIZONTAL_FACING, state.get(FACING));
+                        }
+                    } else {
+                        if (!blockState.isIn(FLIP_BLOCKS)) {
+                            blockState = blockState.with(Properties.HORIZONTAL_FACING, RotationToFacing(state.get(NESW_FACING)));
+                        } else {
+                            blockState = blockState.with(Properties.HORIZONTAL_FACING, RotationToFacing(state.get(NESW_FACING)).getOpposite());
+                        }
+                    }
+                }
+
+                //Rotation
                 if (blockState.getProperties().contains(Properties.ROTATION)) {
                     if (blockState.isIn(BlockTags.BANNERS)) {
                         blockState = blockState.with(Properties.ROTATION, (state.get(EXTRA_FACING) + 8) % 16);
@@ -131,30 +158,23 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     }
                 }
 
+                //Hopper Facing
                 if (blockState.getProperties().contains(Properties.HOPPER_FACING) &&
                     state.get(FACING) != Direction.UP) {
                     blockState = blockState.with(Properties.HOPPER_FACING, state.get(FACING));
                 }
 
+                //Block Half
                 if (blockState.getProperties().contains(Properties.BLOCK_HALF) &&
                     (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
                     if (state.get(FACING) == Direction.UP) {
                         blockState = blockState.with(Properties.BLOCK_HALF, BlockHalf.TOP);
                     } else {
-                        blockState = blockState.with(Properties.BLOCK_HALF, BlockHalf.BOTTOM);
+                        blockState = blockState.with(Properties.BLOCK_HALF, BlockHalf.BOTTOM);;
                     }
                 }
 
-
-                if (blockState.getProperties().contains(Properties.DOUBLE_BLOCK_HALF) &&
-                        (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
-                    if (state.get(FACING) == Direction.UP) {
-                        blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
-                    } else {
-                        blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
-                    }
-                }
-
+                //Slab
                 if (blockState.getProperties().contains(Properties.SLAB_TYPE) &&
                         (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
                     if (state.get(FACING) == Direction.UP) {
@@ -164,6 +184,7 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     }
                 }
 
+                //Block Face
                 if (blockState.getProperties().contains(Properties.BLOCK_FACE)){
                     blockState = switch (state.get(FACING)) {
                         case Direction.UP -> blockState.with(Properties.BLOCK_FACE, BlockFace.CEILING);
@@ -172,6 +193,7 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     };
                 }
 
+                //Axis
                 if (blockState.getProperties().contains(Properties.AXIS)){
                     blockState = switch (state.get(FACING)) {
                         case Direction.WEST, Direction.EAST -> blockState.with(Properties.AXIS, Direction.Axis.X);
@@ -180,6 +202,7 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     };
                 }
 
+                //Horizontal Axis
                 if (blockState.getProperties().contains(Properties.HORIZONTAL_AXIS)){
                     blockState = switch (RotationToFacing(state.get(NESW_FACING))) {
                         case Direction.WEST, Direction.EAST -> blockState.with(Properties.HORIZONTAL_AXIS, Direction.Axis.X);
@@ -188,8 +211,158 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     };
                 }
 
+                //Waterlogged
+                if (blockState.getProperties().contains(Properties.WATERLOGGED)){
+                    if ( (world.getFluidState(infront).getFluid() == Fluids.WATER)) {
+                        blockState = blockState.with(Properties.WATERLOGGED, true);
+                    } else {
+                        blockState = blockState.with(Properties.WATERLOGGED, false);
+                    }
+                }
 
+                if (blockState.isIn(MUST_BE_PLACED_IN_WATER)){
+                    FluidState fluidState = world.getFluidState(infront);
+                    if (!fluidState.isIn(FluidTags.WATER) || fluidState.getLevel() != 8) {
+                        world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                        return;
+                    }
+                }
 
+                BlockState secondBlockState = null;
+
+                //Double Block Half
+                if (blockState.getProperties().contains(Properties.DOUBLE_BLOCK_HALF)) {
+                    if (state.get(FACING) == Direction.DOWN) {
+                        blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
+                        secondBlockState = block.getDefaultState();
+                        secondBlockState = applyAllProperties(blockState, secondBlockState);
+                        secondBlockState = secondBlockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
+                    } else {
+                        blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
+                        secondBlockState = block.getDefaultState();
+                        secondBlockState = applyAllProperties(blockState, secondBlockState);
+                        secondBlockState = secondBlockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
+                    }
+                }
+
+                //Double Bed Part
+                if (blockState.getProperties().contains(Properties.BED_PART)) {
+                    blockState = blockState.with(Properties.BED_PART, BedPart.HEAD);
+                    secondBlockState = block.getDefaultState();
+                    secondBlockState = applyAllProperties(blockState, secondBlockState);
+                    secondBlockState = secondBlockState.with(Properties.BED_PART, BedPart.FOOT);
+                }
+
+                //Handle Candles
+                if (blockState.getProperties().contains(Properties.CANDLES)) {
+                    BlockState infrontState = world.getBlockState(infront);
+                    if (infrontState.getBlock() == block) {
+                        if (infrontState.get(Properties.CANDLES) < 4) {
+                            world.setBlockState(infront, infrontState.with(Properties.CANDLES, infrontState.get(Properties.CANDLES) + 1));
+                            world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                            itemStack.setCount(itemStack.getCount() - 1);
+                            return;
+                        } else {
+                            world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                            return;
+                        }
+                    }
+                }
+
+                //Handle Sea Pickles
+                if (blockState.getProperties().contains(Properties.PICKLES)) {
+                    BlockState infrontState = world.getBlockState(infront);
+                    if (infrontState.getBlock() == block) {
+                        if (infrontState.get(Properties.PICKLES) < 4) {
+                            world.setBlockState(infront, infrontState.with(Properties.PICKLES, infrontState.get(Properties.PICKLES) + 1));
+                            world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                            itemStack.setCount(itemStack.getCount() - 1);
+                            return;
+                        } else {
+                            world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                            return;
+                        }
+                    }
+                }
+
+                //Handle Layers (snow)
+                if (blockState.getProperties().contains(Properties.LAYERS)) {
+                    BlockState infrontState = world.getBlockState(infront);
+                    if (infrontState.getBlock() == block) {
+                        if (infrontState.get(Properties.LAYERS) < 8) {
+                            world.setBlockState(infront, infrontState.with(Properties.LAYERS, infrontState.get(Properties.LAYERS) + 1));
+                            world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                            itemStack.setCount(itemStack.getCount() - 1);
+                            return;
+                        } else {
+                            world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                            return;
+                        }
+                    }
+                }
+
+                //Handle multi face growth blocks (vines, glow lichen, skulk veins)
+                if (blockState.isIn(MULTI_FACE_GROWTH)) {
+                    if (world.getBlockState(infront).getBlock() == block) {
+                        blockState = world.getBlockState(infront);
+                    }
+                    MultiFaceGrowthUtil.Result result = new MultiFaceGrowthUtil().getPlacementShape(blockState, world, infront, state.get(FACING));
+                    blockState = result.state;
+
+                    if (result.canGrow && world.getBlockState(infront).isIn(MULTI_FACE_GROWTH) && world.getBlockState(infront).getBlock() != block) world.setBlockState(infront, Blocks.AIR.getDefaultState());
+
+                    if (result.canGrow && (world.getBlockState(infront).isReplaceable() || world.getBlockState(infront).getBlock() == block)) {
+                        world.setBlockState(infront, blockState);
+                        BlockEntity blockEntity = world.getBlockEntity(infront);
+                        if (blockEntity != null) blockEntity.readComponents(itemStack);
+                        world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                        itemStack.setCount(itemStack.getCount() - 1);
+                    } else {
+                        world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                        return;
+                    }
+                    return;
+                }
+
+                //Handle double places
+                if (secondBlockState != null) {
+                    //Get Position of second block
+                    BlockPos.Mutable secondInfrontMutable = infront.mutableCopy();
+                    BlockPos secondInfront = null;
+                    BlockPos checkPos = infront;
+                    BlockState checkState = blockState;
+                    if (blockState.getProperties().contains(Properties.BED_PART)) {
+                        secondInfront = secondInfrontMutable.offset(state.get(FACING));
+                    } else {
+                        if (blockState.get(Properties.DOUBLE_BLOCK_HALF).equals(DoubleBlockHalf.UPPER)) {
+                            secondInfront = secondInfrontMutable.offset(Direction.DOWN);
+                            checkPos = secondInfront;
+                            checkState = secondBlockState;
+                        } else {
+                            secondInfront = secondInfrontMutable.offset(Direction.UP);
+                        }
+                    }
+
+                    //Check if both are placable
+                    if (checkState.canPlaceAt(world,checkPos) && world.getBlockState(infront).isReplaceable() &&
+                            world.getBlockState(secondInfront).isReplaceable()){
+
+                        world.setBlockState(secondInfront, secondBlockState);
+                        world.setBlockState(infront, blockState);
+
+                        BlockEntity blockEntity = world.getBlockEntity(infront);
+                        if (blockEntity != null) blockEntity.readComponents(itemStack);
+                        BlockEntity secondBlockEntity = world.getBlockEntity(secondInfront);
+                        if (secondBlockEntity != null) secondBlockEntity.readComponents(itemStack);
+                        world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                        itemStack.setCount(itemStack.getCount() - 1);
+
+                    } else {
+                        world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                        return;
+                    }
+                    return;
+                }
 
 
                 //Handle double slab
@@ -206,19 +379,18 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     }
                 }
 
-                // One final check to make sure state is possible to place
+                // Handle all other place
                 if (blockState.canPlaceAt(world,infront) && world.getBlockState(infront).isReplaceable()) {
                     world.setBlockState(infront, blockState);
                     BlockEntity blockEntity = world.getBlockEntity(infront);
-                    if (blockEntity != null) {
-                        blockEntity.readComponents(itemStack);
-                    }
-
+                    if (blockEntity != null) blockEntity.readComponents(itemStack);
                     world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                     itemStack.setCount(itemStack.getCount() - 1);
                 } else {
                     world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                    return;
                 }
+
 
             } else {
                 DispenserBehavior dispenserBehavior = this.getBehaviorForItem(world, itemStack);

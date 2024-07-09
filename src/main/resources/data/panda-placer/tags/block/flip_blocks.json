@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:furnace",
+    "minecraft:chest",
+    "minecraft:trapped_chest",
+    "minecraft:chiseled_bookshelf",
+    "minecraft:lectern",
+    "minecraft:grindstone"
+  ]
+}
