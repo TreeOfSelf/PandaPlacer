@@ -9,13 +9,18 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Method;
 
 public class PandaPlacer implements ModInitializer {
 	public static BlockEntityType<PlacerBlockEntity> PLACER_BLOCK_ENTITY_TYPE;
@@ -28,6 +33,8 @@ public class PandaPlacer implements ModInitializer {
 
 	public static final Logger LOGGER = LoggerFactory.getLogger("panda-placer");
 
+
+
 	@Override
 	public void onInitialize() {
 		PLACER_BLOCK_ENTITY_TYPE = Registry.register(
@@ -39,6 +46,7 @@ public class PandaPlacer implements ModInitializer {
 
 		Registry.register(Registries.BLOCK, Identifier.of("panda-placer", "placerblock"), PLACER_BLOCK);
 		Registry.register(Registries.ITEM, Identifier.of("panda-placer", "placeritem"), PLACER_ITEM);
+
 
 		LOGGER.info("PandaPlacer Started!");
 	}

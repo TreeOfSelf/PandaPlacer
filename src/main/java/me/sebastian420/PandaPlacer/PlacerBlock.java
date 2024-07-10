@@ -1,6 +1,7 @@
 package me.sebastian420.PandaPlacer;
 
 import eu.pb4.polymer.core.api.block.PolymerBlock;
+import me.sebastian420.PandaHeads.PandaHeads;
 import net.minecraft.block.*;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
@@ -28,6 +29,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
+import me.sebastian420.PandaHeads.HeadPlacer;
 
 import static me.sebastian420.PandaPlacer.PandaPlacer.*;
 
@@ -131,6 +133,7 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                         blockState = blockState.with(Properties.FACING, state.get(FACING).getOpposite());
                     }
                 }
+
 
                 //Horizontal Facing
                 if (blockState.getProperties().contains(Properties.HORIZONTAL_FACING)) {
@@ -385,6 +388,11 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     BlockEntity blockEntity = world.getBlockEntity(infront);
                     if (blockEntity != null) blockEntity.readComponents(itemStack);
                     world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+
+                    if (block == Blocks.PLAYER_HEAD) {
+                        HeadPlacerIntegration.placeHead(world, infront, itemStack);
+                    }
+
                     itemStack.setCount(itemStack.getCount() - 1);
                 } else {
                     world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
