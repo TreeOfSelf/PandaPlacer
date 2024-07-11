@@ -1,11 +1,11 @@
 package me.sebastian420.PandaPlacer;
 
 import eu.pb4.polymer.core.api.block.PolymerBlock;
-import me.sebastian420.PandaHeads.PandaHeads;
 import net.minecraft.block.*;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.enums.*;
+import net.minecraft.component.ComponentMap;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -29,7 +29,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
-import me.sebastian420.PandaHeads.HeadPlacer;
 
 import static me.sebastian420.PandaPlacer.PandaPlacer.*;
 
@@ -120,8 +119,12 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
 
                 Block block = ((BlockItem) itemStack.getItem()).getBlock();
                 BlockState blockState = block.getDefaultState();
+                BlockState infrontBlockState = world.getBlockState(infront);
+                ComponentMap prevComponentMap = null;
+                if (world.getBlockEntity(infront) != null) prevComponentMap = world.getBlockEntity(infront).getComponents();
                 BlockSoundGroup soundGroup = block.getDefaultState().getSoundGroup();
                 SoundEvent placeSound = soundGroup.getPlaceSound();
+
 
                 //Handle properties
 
@@ -264,11 +267,11 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                             world.setBlockState(infront, infrontState.with(Properties.CANDLES, infrontState.get(Properties.CANDLES) + 1));
                             world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                             itemStack.setCount(itemStack.getCount() - 1);
-                            return;
+                            BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
                         } else {
                             world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                            return;
                         }
+                        return;
                     }
                 }
 
@@ -280,11 +283,11 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                             world.setBlockState(infront, infrontState.with(Properties.PICKLES, infrontState.get(Properties.PICKLES) + 1));
                             world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                             itemStack.setCount(itemStack.getCount() - 1);
-                            return;
+                            BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
                         } else {
                             world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                            return;
                         }
+                        return;
                     }
                 }
 
@@ -296,11 +299,11 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                             world.setBlockState(infront, infrontState.with(Properties.LAYERS, infrontState.get(Properties.LAYERS) + 1));
                             world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                             itemStack.setCount(itemStack.getCount() - 1);
-                            return;
+                            BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
                         } else {
                             world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                            return;
                         }
+                        return;
                     }
                 }
 
@@ -320,9 +323,9 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                         if (blockEntity != null) blockEntity.readComponents(itemStack);
                         world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         itemStack.setCount(itemStack.getCount() - 1);
+                        BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
                     } else {
                         world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        return;
                     }
                     return;
                 }
@@ -359,10 +362,9 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                         if (secondBlockEntity != null) secondBlockEntity.readComponents(itemStack);
                         world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         itemStack.setCount(itemStack.getCount() - 1);
-
+                        BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
                     } else {
                         world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        return;
                     }
                     return;
                 }
@@ -377,9 +379,14 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                             world.setBlockState(infront, otherState.with(Properties.SLAB_TYPE, SlabType.DOUBLE));
                             world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                             itemStack.setCount(itemStack.getCount() - 1);
-                            return;
+                            BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+                        } else {
+                            world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         }
+                    }else {
+                        world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
                     }
+                    return;
                 }
 
                 // Handle all other place
@@ -388,12 +395,11 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     BlockEntity blockEntity = world.getBlockEntity(infront);
                     if (blockEntity != null) blockEntity.readComponents(itemStack);
                     world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-
                     if (block == Blocks.PLAYER_HEAD) {
                         HeadPlacerIntegration.placeHead(world, infront, itemStack);
                     }
-
                     itemStack.setCount(itemStack.getCount() - 1);
+                    BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
                 } else {
                     world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
                     return;

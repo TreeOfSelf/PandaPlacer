@@ -14,7 +14,7 @@ public class PlacerBlockEntity extends DispenserBlockEntity {
     protected PlacerBlockEntity(BlockPos blockPos, BlockState blockState) {
         super(PLACER_BLOCK_ENTITY_TYPE, blockPos, blockState);
     }
-
+    
     @Override
     protected Text getContainerName() {
         return Text.of("Placer");

@@ -4,23 +4,17 @@ import eu.pb4.polymer.core.api.block.PolymerBlockUtils;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
-import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Method;
 
 public class PandaPlacer implements ModInitializer {
 	public static BlockEntityType<PlacerBlockEntity> PLACER_BLOCK_ENTITY_TYPE;
