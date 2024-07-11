@@ -319,8 +319,6 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
 
                     if (result.canGrow && (world.getBlockState(infront).isReplaceable() || world.getBlockState(infront).getBlock() == block)) {
                         world.setBlockState(infront, blockState);
-                        BlockEntity blockEntity = world.getBlockEntity(infront);
-                        if (blockEntity != null) blockEntity.readComponents(itemStack);
                         world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         itemStack.setCount(itemStack.getCount() - 1);
                         BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
@@ -352,14 +350,8 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     //Check if both are placable
                     if (checkState.canPlaceAt(world,checkPos) && world.getBlockState(infront).isReplaceable() &&
                             world.getBlockState(secondInfront).isReplaceable()){
-
                         world.setBlockState(secondInfront, secondBlockState);
                         world.setBlockState(infront, blockState);
-
-                        BlockEntity blockEntity = world.getBlockEntity(infront);
-                        if (blockEntity != null) blockEntity.readComponents(itemStack);
-                        BlockEntity secondBlockEntity = world.getBlockEntity(secondInfront);
-                        if (secondBlockEntity != null) secondBlockEntity.readComponents(itemStack);
                         world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         itemStack.setCount(itemStack.getCount() - 1);
                         BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
@@ -392,10 +384,10 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                 // Handle all other place
                 if (blockState.canPlaceAt(world,infront) && world.getBlockState(infront).isReplaceable()) {
                     world.setBlockState(infront, blockState);
-                    BlockEntity blockEntity = world.getBlockEntity(infront);
-                    if (blockEntity != null) blockEntity.readComponents(itemStack);
                     world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                     if (block == Blocks.PLAYER_HEAD) {
+                        BlockEntity blockEntity = world.getBlockEntity(infront);
+                        if (blockEntity != null) blockEntity.readComponents(itemStack);
                         HeadPlacerIntegration.placeHead(world, infront, itemStack);
                     }
                     itemStack.setCount(itemStack.getCount() - 1);

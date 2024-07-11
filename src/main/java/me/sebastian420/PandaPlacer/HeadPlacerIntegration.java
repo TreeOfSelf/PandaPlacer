@@ -12,7 +12,6 @@ public class HeadPlacerIntegration {
             Class<?> headPlacerClass = Class.forName("me.sebastian420.PandaHeads.HeadPlacer");
             Method placeMethod = headPlacerClass.getMethod("place", World.class, BlockPos.class, ItemStack.class);
             placeMethod.invoke(null, world, infront, itemStack);
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
     }
 }
