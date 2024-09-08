@@ -16,7 +16,7 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"me.sebastian420.PandaPlacer.PandaPlacer"
+          "me.TreeOfSelf.PandaPlacer.PandaPlacer"
 		]
 	},
 	"mixins": [
@@ -24,7 +24,7 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.15.11",
-		"minecraft": "~1.21",
+		"minecraft": "~1.21.1",
 		"java": ">=21",
 		"fabric-api": "*"
 	},

@@ -1,4 +1,4 @@
-package me.sebastian420.PandaPlacer;
+package me.TreeOfSelf.PandaPlacer;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.MultifaceGrowthBlock;

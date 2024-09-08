@@ -1,4 +1,4 @@
-package me.sebastian420.PandaPlacer;
+package me.TreeOfSelf.PandaPlacer;
 
 import eu.pb4.polymer.core.api.block.PolymerBlock;
 import net.minecraft.block.*;
@@ -30,7 +30,7 @@ import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 
-import static me.sebastian420.PandaPlacer.PandaPlacer.*;
+import static me.TreeOfSelf.PandaPlacer.PandaPlacer.*;
 
 
 public class PlacerBlock extends DispenserBlock implements PolymerBlock {

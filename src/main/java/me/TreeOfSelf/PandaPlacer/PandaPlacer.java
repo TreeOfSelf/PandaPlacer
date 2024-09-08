@@ -1,4 +1,4 @@
-package me.sebastian420.PandaPlacer;
+package me.TreeOfSelf.PandaPlacer;
 
 import eu.pb4.polymer.core.api.block.PolymerBlockUtils;
 import net.fabricmc.api.ModInitializer;

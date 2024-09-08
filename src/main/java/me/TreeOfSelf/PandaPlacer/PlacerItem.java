@@ -1,4 +1,4 @@
-package me.sebastian420.PandaPlacer;
+package me.TreeOfSelf.PandaPlacer;
 
 import eu.pb4.polymer.core.api.item.PolymerItem;
 import net.minecraft.block.Block;
