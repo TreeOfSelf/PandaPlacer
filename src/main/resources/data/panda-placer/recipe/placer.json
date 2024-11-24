@@ -6,15 +6,9 @@
     "CRC"
   ],
   "key": {
-    "C": {
-      "item": "minecraft:cobblestone"
-    },
-    "P": {
-      "item": "minecraft:piston"
-    },
-    "R": {
-      "item": "minecraft:redstone"
-    }
+    "C": "minecraft:cobblestone",
+    "P": "minecraft:piston",
+    "R": "minecraft:redstone"
   },
   "result": {
     "id": "panda-placer:placeritem",
