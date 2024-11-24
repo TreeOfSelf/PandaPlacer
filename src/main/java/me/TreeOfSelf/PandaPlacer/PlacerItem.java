@@ -10,6 +10,7 @@ import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
+import xyz.nucleoid.packettweaker.PacketContext;
 
 public class PlacerItem extends BlockItem implements PolymerItem {
 
@@ -20,8 +21,9 @@ public class PlacerItem extends BlockItem implements PolymerItem {
 
     }
 
-    public Item getPolymerItem(ItemStack itemStack, @Nullable ServerPlayerEntity player) {
+
+    @Override
+    public Item getPolymerItem(ItemStack itemStack, PacketContext context) {
         return Items.DISPENSER;
     }
-
 }

@@ -29,6 +29,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
+import xyz.nucleoid.packettweaker.PacketContext;
 
 import static me.TreeOfSelf.PandaPlacer.PandaPlacer.*;
 
@@ -84,6 +85,11 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
     }
 
     @Override
+    public BlockState getPolymerBlockState(BlockState state, PacketContext context) {
+        return Blocks.DISPENSER.getDefaultState().with(FACING, state.get(FACING));
+    }
+
+    @Override
     public boolean handleMiningOnServer(ItemStack tool, BlockState state, BlockPos pos, ServerPlayerEntity player) {
         return false;
     }
@@ -96,11 +102,6 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PlacerBlockEntity(pos, state);
-    }
-
-    @Override
-    public BlockState getPolymerBlockState(BlockState state) {
-        return Blocks.DISPENSER.getDefaultState().with(FACING, state.get(FACING));
     }
 
     @Override
