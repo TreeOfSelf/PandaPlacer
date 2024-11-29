@@ -37,7 +37,7 @@ public class PandaPlacer implements ModInitializer {
 
 		// Initialize block settings
 		Block.Settings blockSettings = Block.Settings.create()
-				.registryKey(blockKey);
+				.registryKey(blockKey).hardness(3.5F);
 
 		// Create and register the block
 		PLACER_BLOCK = Registry.register(
@@ -51,6 +51,8 @@ public class PandaPlacer implements ModInitializer {
 				.useBlockPrefixedTranslationKey()
 				.registryKey(itemKey);
 
+
+
 		// Create and register the item
 		PLACER_ITEM = Registry.register(
 				Registries.ITEM,
@@ -62,7 +64,7 @@ public class PandaPlacer implements ModInitializer {
 		PLACER_BLOCK_ENTITY_TYPE = Registry.register(
 				Registries.BLOCK_ENTITY_TYPE,
 				Identifier.of(MOD_ID, "placerblockentity"),
-				FabricBlockEntityTypeBuilder.create(PlacerBlockEntity::new).build(null)
+				FabricBlockEntityTypeBuilder.create(PlacerBlockEntity::new, PLACER_BLOCK).build()
 		);
 
 		PolymerBlockUtils.registerBlockEntity(PLACER_BLOCK_ENTITY_TYPE);
