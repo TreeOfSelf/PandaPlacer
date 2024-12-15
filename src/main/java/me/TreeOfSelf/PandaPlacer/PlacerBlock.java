@@ -94,10 +94,10 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
         return false;
     }
 
-    @Override
+    /*@Override
     public ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state) {
         return new ItemStack(PLACER_ITEM);
-    }
+    }*/
 
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
