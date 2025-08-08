@@ -11,6 +11,10 @@ A craftable placer block that can place blocks. It is crafted and textured as a 
 ![Placing slabs based on direction](https://cdn.modrinth.com/data/cached_images/2b3366a5139b0a9e943a532a4e8977dcd6594c93.png)
 ![Upside-down stair](https://cdn.modrinth.com/data/cached_images/00d7b92e70c62ef3f4626152891c432dc0344c59.png)
 
+## Try it out
+`hardcoreanarchy.gay`   (Deathban Anarchy)  
+`sky.hardcoreanarchy.gay`   (Skyblock Anarchy)
+
 ## Support
 
 [Support discord here!]( https://discord.gg/3tP3Tqu983)
