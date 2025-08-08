@@ -26,7 +26,6 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.math.*;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.packettweaker.PacketContext;
@@ -34,7 +33,7 @@ import xyz.nucleoid.packettweaker.PacketContext;
 import static me.TreeOfSelf.PandaPlacer.PandaPlacer.*;
 
 
-public class PlacerBlock extends DispenserBlock implements PolymerBlock {
+public class PlacerBlock extends DropperBlock implements PolymerBlock {
 
 
 
@@ -86,7 +85,7 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
 
     @Override
     public BlockState getPolymerBlockState(BlockState state, PacketContext context) {
-        return Blocks.DISPENSER.getDefaultState().with(FACING, state.get(FACING));
+        return Blocks.DROPPER.getDefaultState().with(FACING, state.get(FACING));
     }
 
     @Override
@@ -385,10 +384,12 @@ public class PlacerBlock extends DispenserBlock implements PolymerBlock {
                     world.setBlockState(infront, blockState);
                     world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                     if (block == Blocks.PLAYER_HEAD) {
-                        BlockEntity blockEntity = world.getBlockEntity(infront);
-                        if (blockEntity != null) blockEntity.readComponents(itemStack);
                         HeadPlacerIntegration.placeHead(world, infront, itemStack);
                     }
+
+                    BlockEntity blockEntity = world.getBlockEntity(infront);
+                    if (blockEntity != null) blockEntity.readComponents(itemStack);
+
                     BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
                     itemStack.setCount(itemStack.getCount() - 1);
                 } else {

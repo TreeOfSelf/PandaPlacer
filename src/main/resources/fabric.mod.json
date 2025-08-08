@@ -3,7 +3,7 @@
 	"id": "panda-placer",
 	"version": "${version}",
 	"name": "panda-placer",
-	"description": "A block like the dispenser that places blocks",
+	"description": "A block like the dropper that places blocks",
 	"authors": [
 		"Me!"
 	],

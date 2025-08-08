@@ -29,8 +29,8 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	modImplementation include('xyz.nucleoid:server-translations-api:2.5.1+1.21.5')
-	modImplementation files('libs/panda-heads-1.0.1_1.21.6+1.21.7.jar')
-	modImplementation files('libs/panda-block-name-1.2.1_1.21.6+1.21.7.jar')
+	modImplementation files('libs/panda-heads-1.0.3_1.21.6+1.21.8.jar')
+	modImplementation files('libs/panda-block-name-1.2.3_1.21.6+1.21.8.jar')
 }
 
 processResources {

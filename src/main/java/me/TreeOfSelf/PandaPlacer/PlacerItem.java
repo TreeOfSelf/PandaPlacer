@@ -5,11 +5,7 @@ import net.minecraft.block.Block;
 import net.minecraft.item.Items;
 
 public class PlacerItem extends PolymerBlockItem  {
-
-
     public PlacerItem(Block block, Settings settings) {
-        super(block, settings, Items.DISPENSER);
+        super(block, settings, Items.DROPPER);
     }
-
-
 }
