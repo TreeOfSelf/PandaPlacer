@@ -26,6 +26,7 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.math.*;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.packettweaker.PacketContext;
@@ -66,6 +67,14 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
         this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(TRIGGERED, false).with(EXTRA_FACING, 0).with(NESW_FACING,0));
     }
 
+
+    private void setInhabited(ServerWorld world, BlockPos infront) {
+        Chunk chunk = world.getChunk(infront);
+        if (chunk.getInhabitedTime() < 6000) {
+            chunk.setInhabitedTime(6000);
+        }
+    }
+
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
         return this.getDefaultState().with(FACING, ctx.getPlayerLookDirection().getOpposite())
@@ -102,6 +111,7 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PlacerBlockEntity(pos, state);
     }
+
 
     @Override
     protected void dispense(ServerWorld world, BlockState state, BlockPos pos) {
@@ -268,6 +278,7 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
                             world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                             itemStack.setCount(itemStack.getCount() - 1);
                             BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+                            setInhabited(world, infront);
                         } else {
                             world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         }
@@ -283,6 +294,7 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
                             world.setBlockState(infront, infrontState.with(Properties.PICKLES, infrontState.get(Properties.PICKLES) + 1));
                             world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                             BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+                            setInhabited(world, infront);
                             itemStack.setCount(itemStack.getCount() - 1);
                         } else {
                             world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -299,6 +311,7 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
                             world.setBlockState(infront, infrontState.with(Properties.LAYERS, infrontState.get(Properties.LAYERS) + 1));
                             world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                             BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+                            setInhabited(world, infront);
                             itemStack.setCount(itemStack.getCount() - 1);
                         } else {
                             world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -321,6 +334,7 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
                         world.setBlockState(infront, blockState);
                         world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+                        setInhabited(world, infront);
                         itemStack.setCount(itemStack.getCount() - 1);
                     } else {
                         world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -354,6 +368,7 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
                         world.setBlockState(infront, blockState);
                         world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+                        setInhabited(world, infront);
                         itemStack.setCount(itemStack.getCount() - 1);
                     } else {
                         world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -371,6 +386,7 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
                             world.setBlockState(infront, otherState.with(Properties.SLAB_TYPE, SlabType.DOUBLE));
                             world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
                             BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+                            setInhabited(world, infront);
                             itemStack.setCount(itemStack.getCount() - 1);
                         } else {
                             world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -391,6 +407,7 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
                     if (blockEntity != null) blockEntity.readComponents(itemStack);
 
                     BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+                    setInhabited(world, infront);
                     itemStack.setCount(itemStack.getCount() - 1);
                 } else {
                     world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -408,4 +425,5 @@ public class PlacerBlock extends DropperBlock implements PolymerBlock {
 
         }
     }
+
 }
