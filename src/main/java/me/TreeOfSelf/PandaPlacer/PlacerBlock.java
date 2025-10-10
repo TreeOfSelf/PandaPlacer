@@ -36,8 +36,6 @@ import static me.TreeOfSelf.PandaPlacer.PandaPlacer.*;
 
 public class PlacerBlock extends DropperBlock implements PolymerBlock {
 
-
-
     public static final IntProperty EXTRA_FACING = Properties.ROTATION;
     public static final IntProperty NESW_FACING = Properties.AGE_15;
 
