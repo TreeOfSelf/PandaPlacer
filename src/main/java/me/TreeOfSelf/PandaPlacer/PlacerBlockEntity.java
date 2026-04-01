@@ -1,20 +1,19 @@
 package me.TreeOfSelf.PandaPlacer;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.DispenserBlockEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.entity.DispenserBlockEntity;
 
 public class PlacerBlockEntity extends DispenserBlockEntity {
 
-    protected PlacerBlockEntity(BlockPos blockPos, BlockState blockState) {
-        super(PandaPlacer.PLACER_BLOCK_ENTITY_TYPE, blockPos, blockState);
-    }
-    
-    @Override
-    protected Text getContainerName() {
-        return Text.of("Placer");
-    }
+	protected PlacerBlockEntity(BlockPos blockPos, BlockState blockState) {
+		super(PandaPlacer.PLACER_BLOCK_ENTITY_TYPE, blockPos, blockState);
+	}
+
+	@Override
+	protected Component getDefaultName() {
+		return Component.literal("Placer");
+	}
 
 }

@@ -3,16 +3,16 @@ package me.TreeOfSelf.PandaPlacer;
 import eu.pb4.polymer.core.api.block.PolymerBlockUtils;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.item.Item;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,48 +22,40 @@ public class PandaPlacer implements ModInitializer {
 	public static Block PLACER_BLOCK;
 	public static Item PLACER_ITEM;
 
-	public static final TagKey<Block> MUST_BE_PLACED_IN_WATER = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "must_be_placed_in_water"));
-	public static final TagKey<Block> MULTI_FACE_GROWTH = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "multi_face_growth"));
-	public static final TagKey<Block> FLIP_BLOCKS = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "flip_blocks"));
+	public static final TagKey<Block> MUST_BE_PLACED_IN_WATER = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MOD_ID, "must_be_placed_in_water"));
+	public static final TagKey<Block> MULTI_FACE_GROWTH = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MOD_ID, "multi_face_growth"));
+	public static final TagKey<Block> FLIP_BLOCKS = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MOD_ID, "flip_blocks"));
 
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	@Override
 	public void onInitialize() {
-		Identifier blockId = Identifier.of(MOD_ID, "placerblock");
-		Identifier itemId = Identifier.of(MOD_ID, "placeritem");
-		RegistryKey<Block> blockKey = RegistryKey.of(RegistryKeys.BLOCK, blockId);
-		RegistryKey<Item> itemKey = RegistryKey.of(RegistryKeys.ITEM, itemId);
+		Identifier blockId = Identifier.fromNamespaceAndPath(MOD_ID, "placerblock");
+		Identifier itemId = Identifier.fromNamespaceAndPath(MOD_ID, "placeritem");
+		ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, blockId);
+		ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, itemId);
 
-		// Initialize block settings
-		Block.Settings blockSettings = Block.Settings.create()
-				.registryKey(blockKey).hardness(3.5F);
+		BlockBehaviour.Properties blockSettings = BlockBehaviour.Properties.of().strength(3.5F).setId(blockKey);
 
-		// Create and register the block
 		PLACER_BLOCK = Registry.register(
-				Registries.BLOCK,
+				BuiltInRegistries.BLOCK,
 				blockId,
 				new PlacerBlock(blockSettings)
 		);
 
-		// Initialize item settings
-		Item.Settings itemSettings = new Item.Settings()
-				.useBlockPrefixedTranslationKey()
-				.registryKey(itemKey);
+		Item.Properties itemSettings = new Item.Properties()
+				.useBlockDescriptionPrefix()
+				.setId(itemKey);
 
-
-
-		// Create and register the item
 		PLACER_ITEM = Registry.register(
-				Registries.ITEM,
+				BuiltInRegistries.ITEM,
 				itemId,
 				new PlacerItem(PLACER_BLOCK, itemSettings)
 		);
 
-		// Register block entity
 		PLACER_BLOCK_ENTITY_TYPE = Registry.register(
-				Registries.BLOCK_ENTITY_TYPE,
-				Identifier.of(MOD_ID, "placerblockentity"),
+				BuiltInRegistries.BLOCK_ENTITY_TYPE,
+				Identifier.fromNamespaceAndPath(MOD_ID, "placerblockentity"),
 				FabricBlockEntityTypeBuilder.create(PlacerBlockEntity::new, PLACER_BLOCK).build()
 		);
 

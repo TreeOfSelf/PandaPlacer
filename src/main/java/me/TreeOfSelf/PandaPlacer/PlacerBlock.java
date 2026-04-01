@@ -1,427 +1,414 @@
 package me.TreeOfSelf.PandaPlacer;
 
 import eu.pb4.polymer.core.api.block.PolymerBlock;
-import net.minecraft.block.*;
-import net.minecraft.block.dispenser.DispenserBehavior;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.enums.*;
-import net.minecraft.component.ComponentMap;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.registry.tag.FluidTags;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.IntProperty;
-import net.minecraft.state.property.Properties;
-import net.minecraft.state.property.Property;
-import net.minecraft.util.math.*;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.event.GameEvent;
-import org.jetbrains.annotations.Nullable;
-import xyz.nucleoid.packettweaker.PacketContext;
+import net.fabricmc.fabric.api.networking.v1.context.PacketContext;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.dispenser.BlockSource;
+import net.minecraft.core.dispenser.DispenseItemBehavior;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DropperBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.block.state.properties.Half;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.block.state.properties.RotationSegment;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import org.jspecify.annotations.Nullable;
 
-import static me.TreeOfSelf.PandaPlacer.PandaPlacer.*;
-
+import static me.TreeOfSelf.PandaPlacer.PandaPlacer.FLIP_BLOCKS;
+import static me.TreeOfSelf.PandaPlacer.PandaPlacer.MULTI_FACE_GROWTH;
+import static me.TreeOfSelf.PandaPlacer.PandaPlacer.MUST_BE_PLACED_IN_WATER;
+import static net.minecraft.world.level.block.DispenserBlock.FACING;
+import static net.minecraft.world.level.block.DispenserBlock.TRIGGERED;
 
 public class PlacerBlock extends DropperBlock implements PolymerBlock {
 
-    public static final IntProperty EXTRA_FACING = Properties.ROTATION;
-    public static final IntProperty NESW_FACING = Properties.AGE_15;
+	public static final IntegerProperty EXTRA_FACING = BlockStateProperties.ROTATION_16;
+	public static final IntegerProperty NESW_FACING = BlockStateProperties.AGE_15;
 
-    static BlockState applyAllProperties(BlockState fromState, BlockState toState) {
-        for (Property<?> property : fromState.getProperties()) {
-            toState = applyProperty(toState, property, fromState.get(property));
-        }
-        return toState;
-    }
+	static BlockState applyAllProperties(BlockState fromState, BlockState toState) {
+		for (Property<?> property : fromState.getProperties()) {
+			toState = applyProperty(toState, property, fromState.getValue(property));
+		}
+		return toState;
+	}
 
-    private static <T extends Comparable<T>> BlockState applyProperty(BlockState state, Property<T> property, Comparable<?> value) {
-        return state.with(property, property.getType().cast(value));
-    }
+	private static <T extends Comparable<T>> BlockState applyProperty(BlockState state, Property<T> property, Comparable<?> value) {
+		return state.setValue(property, property.getValueClass().cast(value));
+	}
 
-    Direction RotationToFacing(Integer rotation){
-        return switch (rotation) {
-            case 0, 3 -> Direction.SOUTH;
-            case 4, 7 -> Direction.WEST;
-            case 8 , 11 -> Direction.NORTH;
-            case 12 , 15 -> Direction.EAST;
-            default -> Direction.NORTH;
-        };
-    }
+	Direction RotationToFacing(Integer rotation) {
+		return switch (rotation) {
+			case 0, 3 -> Direction.SOUTH;
+			case 4, 7 -> Direction.WEST;
+			case 8, 11 -> Direction.NORTH;
+			case 12, 15 -> Direction.EAST;
+			default -> Direction.NORTH;
+		};
+	}
 
-    public PlacerBlock(Settings settings) {
-        super(settings);
-        this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(TRIGGERED, false).with(EXTRA_FACING, 0).with(NESW_FACING,0));
-    }
+	public PlacerBlock(BlockBehaviour.Properties settings) {
+		super(settings);
+		this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(TRIGGERED, false).setValue(EXTRA_FACING, 0).setValue(NESW_FACING, 0));
+	}
 
+	private void setInhabited(ServerLevel level, BlockPos infront) {
+		ChunkAccess chunk = level.getChunkAt(infront);
+		if (chunk.getInhabitedTime() < 6000L) {
+			chunk.setInhabitedTime(6000L);
+		}
+	}
 
-    private void setInhabited(ServerWorld world, BlockPos infront) {
-        Chunk chunk = world.getChunk(infront);
-        if (chunk.getInhabitedTime() < 6000) {
-            chunk.setInhabitedTime(6000);
-        }
-    }
+	@Override
+	public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+		Player player = ctx.getPlayer();
+		Direction facing = ctx.getNearestLookingDirection().getOpposite();
+		int extra = player != null ? RotationSegment.convertToSegment(player.getYRot()) : 0;
+		int nesw = player != null ? RotationSegment.convertToSegment(player.getDirection()) : 0;
+		return this.defaultBlockState().setValue(FACING, facing).setValue(EXTRA_FACING, extra).setValue(NESW_FACING, nesw);
+	}
 
-    @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx) {
-        return this.getDefaultState().with(FACING, ctx.getPlayerLookDirection().getOpposite())
-                .with(EXTRA_FACING, RotationPropertyHelper.fromYaw(ctx.getPlayerYaw()))
-                .with(NESW_FACING, RotationPropertyHelper.fromDirection(ctx.getHorizontalPlayerFacing()));
-    }
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		builder.add(FACING, TRIGGERED, EXTRA_FACING, NESW_FACING);
+	}
 
-    @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING, TRIGGERED, EXTRA_FACING, NESW_FACING);
-    }
+	@Override
+	public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+		level.setBlock(pos, state, 3);
+	}
 
-    @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
-        world.setBlockState(pos, state);
-    }
+	@Override
+	public BlockState getPolymerBlockState(BlockState state, PacketContext context) {
+		return Blocks.DROPPER.defaultBlockState().setValue(FACING, state.getValue(FACING));
+	}
 
-    @Override
-    public BlockState getPolymerBlockState(BlockState state, PacketContext context) {
-        return Blocks.DROPPER.getDefaultState().with(FACING, state.get(FACING));
-    }
+	@Override
+	public boolean handleMiningOnServer(ItemStack tool, BlockState state, BlockPos pos, ServerPlayer player) {
+		return false;
+	}
 
-    @Override
-    public boolean handleMiningOnServer(ItemStack tool, BlockState state, BlockPos pos, ServerPlayerEntity player) {
-        return false;
-    }
+	@Override
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+		return new PlacerBlockEntity(pos, state);
+	}
 
-    /*@Override
-    public ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state) {
-        return new ItemStack(PLACER_ITEM);
-    }*/
+	@Override
+	protected void dispenseFrom(ServerLevel level, BlockState state, BlockPos pos) {
+		PlacerBlockEntity dispenserBlockEntity = (PlacerBlockEntity) level.getBlockEntity(pos);
+		BlockSource blockSource = new BlockSource(level, pos, state, dispenserBlockEntity);
+		int i = dispenserBlockEntity.getRandomSlot(level.getRandom());
+		if (i < 0) {
+			level.levelEvent(1001, pos, 0);
+			level.gameEvent(GameEvent.BLOCK_ACTIVATE, pos, GameEvent.Context.of(dispenserBlockEntity.getBlockState()));
+		} else {
+			ItemStack itemStack = dispenserBlockEntity.getItem(i);
+			BlockPos infront = pos.relative(state.getValue(FACING));
 
-    @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new PlacerBlockEntity(pos, state);
-    }
+			if (itemStack.getItem() instanceof BlockItem blockItem) {
 
+				Block block = blockItem.getBlock();
+				BlockState blockState = block.defaultBlockState();
+				BlockState infrontBlockState = level.getBlockState(infront);
+				net.minecraft.core.component.DataComponentMap prevComponentMap = null;
+				if (level.getBlockEntity(infront) != null) {
+					prevComponentMap = level.getBlockEntity(infront).components();
+				}
+				SoundType soundGroup = block.defaultBlockState().getSoundType();
+				SoundEvent placeSound = soundGroup.getPlaceSound();
 
-    @Override
-    protected void dispense(ServerWorld world, BlockState state, BlockPos pos) {
-        PlacerBlockEntity dispenserBlockEntity = (PlacerBlockEntity) world.getBlockEntity(pos);
-        BlockPointer blockPointer = new BlockPointer(world, pos, state, dispenserBlockEntity);
-        int i = dispenserBlockEntity.chooseNonEmptySlot(world.random);
-        if (i < 0) {
-            world.syncWorldEvent(1001, pos, 0);
-            world.emitGameEvent(GameEvent.BLOCK_ACTIVATE, pos, GameEvent.Emitter.of(dispenserBlockEntity.getCachedState()));
-        } else {
-            ItemStack itemStack = dispenserBlockEntity.getStack(i);
-            BlockPos infront = pos.offset(state.get(FACING));
+				if (blockState.getProperties().contains(BlockStateProperties.FACING)) {
+					if (!blockState.is(FLIP_BLOCKS)) {
+						blockState = blockState.setValue(BlockStateProperties.FACING, state.getValue(FACING));
+					} else {
+						blockState = blockState.setValue(BlockStateProperties.FACING, state.getValue(FACING).getOpposite());
+					}
+				}
 
-            if (itemStack.getItem() instanceof BlockItem) {
+				if (blockState.getProperties().contains(BlockStateProperties.HORIZONTAL_FACING)) {
+					if (state.getValue(FACING) != Direction.UP && state.getValue(FACING) != Direction.DOWN) {
+						if (!blockState.is(FLIP_BLOCKS)) {
+							blockState = blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, state.getValue(FACING).getOpposite());
+						} else {
+							blockState = blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, state.getValue(FACING));
+						}
+					} else {
+						if (!blockState.is(FLIP_BLOCKS)) {
+							blockState = blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, RotationToFacing(state.getValue(NESW_FACING)));
+						} else {
+							blockState = blockState.setValue(BlockStateProperties.HORIZONTAL_FACING, RotationToFacing(state.getValue(NESW_FACING)).getOpposite());
+						}
+					}
+				}
 
-                Block block = ((BlockItem) itemStack.getItem()).getBlock();
-                BlockState blockState = block.getDefaultState();
-                BlockState infrontBlockState = world.getBlockState(infront);
-                ComponentMap prevComponentMap = null;
-                if (world.getBlockEntity(infront) != null) prevComponentMap = world.getBlockEntity(infront).getComponents();
-                BlockSoundGroup soundGroup = block.getDefaultState().getSoundGroup();
-                SoundEvent placeSound = soundGroup.getPlaceSound();
+				if (blockState.getProperties().contains(BlockStateProperties.ROTATION_16)) {
+					if (blockState.is(BlockTags.BANNERS)) {
+						blockState = blockState.setValue(BlockStateProperties.ROTATION_16, (state.getValue(EXTRA_FACING) + 8) % 16);
+					} else {
+						blockState = blockState.setValue(BlockStateProperties.ROTATION_16, state.getValue(EXTRA_FACING));
+					}
+				}
 
+				if (blockState.getProperties().contains(BlockStateProperties.FACING_HOPPER)
+						&& state.getValue(FACING) != Direction.UP) {
+					blockState = blockState.setValue(BlockStateProperties.FACING_HOPPER, state.getValue(FACING));
+				}
 
-                //Handle properties
+				if (blockState.getProperties().contains(BlockStateProperties.HALF)
+						&& (state.getValue(FACING) == Direction.UP || state.getValue(FACING) == Direction.DOWN)) {
+					if (state.getValue(FACING) == Direction.UP) {
+						blockState = blockState.setValue(BlockStateProperties.HALF, Half.TOP);
+					} else {
+						blockState = blockState.setValue(BlockStateProperties.HALF, Half.BOTTOM);
+					}
+				}
 
-                //Facing Property
-                if (blockState.getProperties().contains(Properties.FACING)) {
-                    if (!blockState.isIn(FLIP_BLOCKS)) {
-                        blockState = blockState.with(Properties.FACING, state.get(FACING));
-                    } else {
-                        blockState = blockState.with(Properties.FACING, state.get(FACING).getOpposite());
-                    }
-                }
+				if (blockState.getProperties().contains(BlockStateProperties.SLAB_TYPE)
+						&& (state.getValue(FACING) == Direction.UP || state.getValue(FACING) == Direction.DOWN)) {
+					if (state.getValue(FACING) == Direction.UP) {
+						blockState = blockState.setValue(BlockStateProperties.SLAB_TYPE, SlabType.BOTTOM);
+					} else {
+						blockState = blockState.setValue(BlockStateProperties.SLAB_TYPE, SlabType.TOP);
+					}
+				}
 
+				if (blockState.getProperties().contains(BlockStateProperties.ATTACH_FACE)) {
+					blockState = switch (state.getValue(FACING)) {
+						case UP -> blockState.setValue(BlockStateProperties.ATTACH_FACE, AttachFace.CEILING);
+						case DOWN -> blockState.setValue(BlockStateProperties.ATTACH_FACE, AttachFace.FLOOR);
+						default -> blockState.setValue(BlockStateProperties.ATTACH_FACE, AttachFace.WALL);
+					};
+				}
 
-                //Horizontal Facing
-                if (blockState.getProperties().contains(Properties.HORIZONTAL_FACING)) {
-                    if(state.get(FACING) != Direction.UP && state.get(FACING) != Direction.DOWN){
-                        if (!blockState.isIn(FLIP_BLOCKS)) {
-                            blockState = blockState.with(Properties.HORIZONTAL_FACING, state.get(FACING).getOpposite());
-                        } else {
-                            blockState = blockState.with(Properties.HORIZONTAL_FACING, state.get(FACING));
-                        }
-                    } else {
-                        if (!blockState.isIn(FLIP_BLOCKS)) {
-                            blockState = blockState.with(Properties.HORIZONTAL_FACING, RotationToFacing(state.get(NESW_FACING)));
-                        } else {
-                            blockState = blockState.with(Properties.HORIZONTAL_FACING, RotationToFacing(state.get(NESW_FACING)).getOpposite());
-                        }
-                    }
-                }
+				if (blockState.getProperties().contains(BlockStateProperties.AXIS)) {
+					blockState = switch (state.getValue(FACING)) {
+						case WEST, EAST -> blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.X);
+						case NORTH, SOUTH -> blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.Z);
+						case UP, DOWN -> blockState.setValue(BlockStateProperties.AXIS, Direction.Axis.Y);
+					};
+				}
 
-                //Rotation
-                if (blockState.getProperties().contains(Properties.ROTATION)) {
-                    if (blockState.isIn(BlockTags.BANNERS)) {
-                        blockState = blockState.with(Properties.ROTATION, (state.get(EXTRA_FACING) + 8) % 16);
-                    } else {
-                        blockState = blockState.with(Properties.ROTATION, state.get(EXTRA_FACING));
-                    }
-                }
+				if (blockState.getProperties().contains(BlockStateProperties.HORIZONTAL_AXIS)) {
+					blockState = switch (RotationToFacing(state.getValue(NESW_FACING))) {
+						case WEST, EAST -> blockState.setValue(BlockStateProperties.HORIZONTAL_AXIS, Direction.Axis.X);
+						case NORTH, SOUTH -> blockState.setValue(BlockStateProperties.HORIZONTAL_AXIS, Direction.Axis.Z);
+						case UP, DOWN -> blockState.setValue(BlockStateProperties.HORIZONTAL_AXIS, Direction.Axis.X);
+					};
+				}
 
-                //Hopper Facing
-                if (blockState.getProperties().contains(Properties.HOPPER_FACING) &&
-                    state.get(FACING) != Direction.UP) {
-                    blockState = blockState.with(Properties.HOPPER_FACING, state.get(FACING));
-                }
+				if (blockState.getProperties().contains(BlockStateProperties.WATERLOGGED)) {
+					if (level.getFluidState(infront).getType() == Fluids.WATER) {
+						blockState = blockState.setValue(BlockStateProperties.WATERLOGGED, true);
+					} else {
+						blockState = blockState.setValue(BlockStateProperties.WATERLOGGED, false);
+					}
+				}
 
-                //Block Half
-                if (blockState.getProperties().contains(Properties.BLOCK_HALF) &&
-                    (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
-                    if (state.get(FACING) == Direction.UP) {
-                        blockState = blockState.with(Properties.BLOCK_HALF, BlockHalf.TOP);
-                    } else {
-                        blockState = blockState.with(Properties.BLOCK_HALF, BlockHalf.BOTTOM);;
-                    }
-                }
+				if (blockState.is(MUST_BE_PLACED_IN_WATER)) {
+					FluidState fluidState = level.getFluidState(infront);
+					if (!fluidState.is(FluidTags.WATER) || fluidState.getAmount() != 8) {
+						level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0F, 1.0F);
+						return;
+					}
+				}
 
-                //Slab
-                if (blockState.getProperties().contains(Properties.SLAB_TYPE) &&
-                        (state.get(FACING) == Direction.UP || (state.get(FACING) == Direction.DOWN))) {
-                    if (state.get(FACING) == Direction.UP) {
-                        blockState = blockState.with(Properties.SLAB_TYPE, SlabType.BOTTOM);
-                    } else {
-                        blockState = blockState.with(Properties.SLAB_TYPE, SlabType.TOP);
-                    }
-                }
+				BlockState secondBlockState = null;
 
-                //Block Face
-                if (blockState.getProperties().contains(Properties.BLOCK_FACE)){
-                    blockState = switch (state.get(FACING)) {
-                        case Direction.UP -> blockState.with(Properties.BLOCK_FACE, BlockFace.CEILING);
-                        case Direction.DOWN -> blockState.with(Properties.BLOCK_FACE, BlockFace.FLOOR);
-                        default -> blockState.with(Properties.BLOCK_FACE, BlockFace.WALL);
-                    };
-                }
+				if (blockState.getProperties().contains(BlockStateProperties.DOUBLE_BLOCK_HALF)) {
+					if (state.getValue(FACING) == Direction.DOWN) {
+						blockState = blockState.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
+						secondBlockState = block.defaultBlockState();
+						secondBlockState = applyAllProperties(blockState, secondBlockState);
+						secondBlockState = secondBlockState.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
+					} else {
+						blockState = blockState.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
+						secondBlockState = block.defaultBlockState();
+						secondBlockState = applyAllProperties(blockState, secondBlockState);
+						secondBlockState = secondBlockState.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
+					}
+				}
 
-                //Axis
-                if (blockState.getProperties().contains(Properties.AXIS)){
-                    blockState = switch (state.get(FACING)) {
-                        case Direction.WEST, Direction.EAST -> blockState.with(Properties.AXIS, Direction.Axis.X);
-                        case Direction.NORTH, Direction.SOUTH -> blockState.with(Properties.AXIS, Direction.Axis.Z);
-                        case Direction.UP, Direction.DOWN -> blockState.with(Properties.AXIS, Direction.Axis.Y);
-                    };
-                }
+				if (blockState.getProperties().contains(BlockStateProperties.BED_PART)) {
+					blockState = blockState.setValue(BlockStateProperties.BED_PART, BedPart.HEAD);
+					secondBlockState = block.defaultBlockState();
+					secondBlockState = applyAllProperties(blockState, secondBlockState);
+					secondBlockState = secondBlockState.setValue(BlockStateProperties.BED_PART, BedPart.FOOT);
+				}
 
-                //Horizontal Axis
-                if (blockState.getProperties().contains(Properties.HORIZONTAL_AXIS)){
-                    blockState = switch (RotationToFacing(state.get(NESW_FACING))) {
-                        case Direction.WEST, Direction.EAST -> blockState.with(Properties.HORIZONTAL_AXIS, Direction.Axis.X);
-                        case Direction.NORTH, Direction.SOUTH -> blockState.with(Properties.HORIZONTAL_AXIS, Direction.Axis.Z);
-                        case Direction.UP, Direction.DOWN -> blockState.with(Properties.HORIZONTAL_AXIS, Direction.Axis.X);
-                    };
-                }
+				if (blockState.getProperties().contains(BlockStateProperties.CANDLES)) {
+					BlockState infrontState = level.getBlockState(infront);
+					if (infrontState.getBlock() == block) {
+						if (infrontState.getValue(BlockStateProperties.CANDLES) < 4) {
+							level.setBlock(infront, infrontState.setValue(BlockStateProperties.CANDLES, infrontState.getValue(BlockStateProperties.CANDLES) + 1), 3);
+							level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, placeSound, SoundSource.BLOCKS, 1.0F, 1.0F);
+							itemStack.shrink(1);
+							BlockNameIntegration.place(level, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+							setInhabited(level, infront);
+						} else {
+							level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0F, 1.0F);
+						}
+						return;
+					}
+				}
 
-                //Waterlogged
-                if (blockState.getProperties().contains(Properties.WATERLOGGED)){
-                    if ( (world.getFluidState(infront).getFluid() == Fluids.WATER)) {
-                        blockState = blockState.with(Properties.WATERLOGGED, true);
-                    } else {
-                        blockState = blockState.with(Properties.WATERLOGGED, false);
-                    }
-                }
+				if (blockState.getProperties().contains(BlockStateProperties.PICKLES)) {
+					BlockState infrontState = level.getBlockState(infront);
+					if (infrontState.getBlock() == block) {
+						if (infrontState.getValue(BlockStateProperties.PICKLES) < 4) {
+							level.setBlock(infront, infrontState.setValue(BlockStateProperties.PICKLES, infrontState.getValue(BlockStateProperties.PICKLES) + 1), 3);
+							level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, placeSound, SoundSource.BLOCKS, 1.0F, 1.0F);
+							BlockNameIntegration.place(level, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+							setInhabited(level, infront);
+							itemStack.shrink(1);
+						} else {
+							level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0F, 1.0F);
+						}
+						return;
+					}
+				}
 
-                if (blockState.isIn(MUST_BE_PLACED_IN_WATER)){
-                    FluidState fluidState = world.getFluidState(infront);
-                    if (!fluidState.isIn(FluidTags.WATER) || fluidState.getLevel() != 8) {
-                        world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        return;
-                    }
-                }
+				if (blockState.getProperties().contains(BlockStateProperties.LAYERS)) {
+					BlockState infrontState = level.getBlockState(infront);
+					if (infrontState.getBlock() == block) {
+						if (infrontState.getValue(BlockStateProperties.LAYERS) < 8) {
+							level.setBlock(infront, infrontState.setValue(BlockStateProperties.LAYERS, infrontState.getValue(BlockStateProperties.LAYERS) + 1), 3);
+							level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, placeSound, SoundSource.BLOCKS, 1.0F, 1.0F);
+							BlockNameIntegration.place(level, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+							setInhabited(level, infront);
+							itemStack.shrink(1);
+						} else {
+							level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0F, 1.0F);
+						}
+						return;
+					}
+				}
 
-                BlockState secondBlockState = null;
+				if (blockState.is(MULTI_FACE_GROWTH)) {
+					if (level.getBlockState(infront).getBlock() == block) {
+						blockState = level.getBlockState(infront);
+					}
+					MultiFaceGrowthUtil.Result result = new MultiFaceGrowthUtil().getPlacementShape(blockState, level, infront, state.getValue(FACING));
+					blockState = result.state;
 
-                //Double Block Half
-                if (blockState.getProperties().contains(Properties.DOUBLE_BLOCK_HALF)) {
-                    if (state.get(FACING) == Direction.DOWN) {
-                        blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
-                        secondBlockState = block.getDefaultState();
-                        secondBlockState = applyAllProperties(blockState, secondBlockState);
-                        secondBlockState = secondBlockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
-                    } else {
-                        blockState = blockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
-                        secondBlockState = block.getDefaultState();
-                        secondBlockState = applyAllProperties(blockState, secondBlockState);
-                        secondBlockState = secondBlockState.with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
-                    }
-                }
+					if (result.canGrow && level.getBlockState(infront).is(MULTI_FACE_GROWTH) && level.getBlockState(infront).getBlock() != block) {
+						level.setBlock(infront, Blocks.AIR.defaultBlockState(), 3);
+					}
 
-                //Double Bed Part
-                if (blockState.getProperties().contains(Properties.BED_PART)) {
-                    blockState = blockState.with(Properties.BED_PART, BedPart.HEAD);
-                    secondBlockState = block.getDefaultState();
-                    secondBlockState = applyAllProperties(blockState, secondBlockState);
-                    secondBlockState = secondBlockState.with(Properties.BED_PART, BedPart.FOOT);
-                }
+					if (result.canGrow && (level.getBlockState(infront).canBeReplaced() || level.getBlockState(infront).getBlock() == block)) {
+						level.setBlock(infront, blockState, 3);
+						level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, placeSound, SoundSource.BLOCKS, 1.0F, 1.0F);
+						BlockNameIntegration.place(level, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+						setInhabited(level, infront);
+						itemStack.shrink(1);
+					} else {
+						level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0F, 1.0F);
+					}
+					return;
+				}
 
-                //Handle Candles
-                if (blockState.getProperties().contains(Properties.CANDLES)) {
-                    BlockState infrontState = world.getBlockState(infront);
-                    if (infrontState.getBlock() == block) {
-                        if (infrontState.get(Properties.CANDLES) < 4) {
-                            world.setBlockState(infront, infrontState.with(Properties.CANDLES, infrontState.get(Properties.CANDLES) + 1));
-                            world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                            itemStack.setCount(itemStack.getCount() - 1);
-                            BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
-                            setInhabited(world, infront);
-                        } else {
-                            world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        }
-                        return;
-                    }
-                }
+				if (secondBlockState != null) {
+					BlockPos.MutableBlockPos secondInfrontMutable = infront.mutable();
+					BlockPos secondInfront = null;
+					BlockPos checkPos = infront;
+					BlockState checkState = blockState;
+					if (blockState.getProperties().contains(BlockStateProperties.BED_PART)) {
+						secondInfront = secondInfrontMutable.relative(state.getValue(FACING));
+					} else {
+						if (blockState.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF).equals(DoubleBlockHalf.UPPER)) {
+							secondInfront = secondInfrontMutable.relative(Direction.DOWN);
+							checkPos = secondInfront;
+							checkState = secondBlockState;
+						} else {
+							secondInfront = secondInfrontMutable.relative(Direction.UP);
+						}
+					}
 
-                //Handle Sea Pickles
-                if (blockState.getProperties().contains(Properties.PICKLES)) {
-                    BlockState infrontState = world.getBlockState(infront);
-                    if (infrontState.getBlock() == block) {
-                        if (infrontState.get(Properties.PICKLES) < 4) {
-                            world.setBlockState(infront, infrontState.with(Properties.PICKLES, infrontState.get(Properties.PICKLES) + 1));
-                            world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                            BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
-                            setInhabited(world, infront);
-                            itemStack.setCount(itemStack.getCount() - 1);
-                        } else {
-                            world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        }
-                        return;
-                    }
-                }
+					if (checkState.canSurvive(level, checkPos) && level.getBlockState(infront).canBeReplaced()
+							&& level.getBlockState(secondInfront).canBeReplaced()) {
+						level.setBlock(secondInfront, secondBlockState, 3);
+						level.setBlock(infront, blockState, 3);
+						level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, placeSound, SoundSource.BLOCKS, 1.0F, 1.0F);
+						BlockNameIntegration.place(level, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+						setInhabited(level, infront);
+						itemStack.shrink(1);
+					} else {
+						level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0F, 1.0F);
+					}
+					return;
+				}
 
-                //Handle Layers (snow)
-                if (blockState.getProperties().contains(Properties.LAYERS)) {
-                    BlockState infrontState = world.getBlockState(infront);
-                    if (infrontState.getBlock() == block) {
-                        if (infrontState.get(Properties.LAYERS) < 8) {
-                            world.setBlockState(infront, infrontState.with(Properties.LAYERS, infrontState.get(Properties.LAYERS) + 1));
-                            world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                            BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
-                            setInhabited(world, infront);
-                            itemStack.setCount(itemStack.getCount() - 1);
-                        } else {
-                            world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        }
-                        return;
-                    }
-                }
+				if (blockState.is(BlockTags.SLABS)) {
+					BlockState otherState = level.getBlockState(infront);
+					if (otherState.getBlock() == block) {
+						SlabType otherSlabType = otherState.getValue(BlockStateProperties.SLAB_TYPE);
+						if (otherSlabType != SlabType.DOUBLE && otherSlabType != blockState.getValue(BlockStateProperties.SLAB_TYPE)) {
+							level.setBlock(infront, otherState.setValue(BlockStateProperties.SLAB_TYPE, SlabType.DOUBLE), 3);
+							level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, placeSound, SoundSource.BLOCKS, 1.0F, 1.0F);
+							BlockNameIntegration.place(level, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+							setInhabited(level, infront);
+							itemStack.shrink(1);
+						} else {
+							level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0F, 1.0F);
+						}
+						return;
+					}
+				}
 
-                //Handle multi face growth blocks (vines, glow lichen, skulk veins)
-                if (blockState.isIn(MULTI_FACE_GROWTH)) {
-                    if (world.getBlockState(infront).getBlock() == block) {
-                        blockState = world.getBlockState(infront);
-                    }
-                    MultiFaceGrowthUtil.Result result = new MultiFaceGrowthUtil().getPlacementShape(blockState, world, infront, state.get(FACING));
-                    blockState = result.state;
+				if (blockState.canSurvive(level, infront) && level.getBlockState(infront).canBeReplaced()) {
+					level.setBlock(infront, blockState, 3);
+					level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, placeSound, SoundSource.BLOCKS, 1.0F, 1.0F);
+					if (block == Blocks.PLAYER_HEAD) {
+						HeadPlacerIntegration.placeHead(level, infront, itemStack);
+					}
 
-                    if (result.canGrow && world.getBlockState(infront).isIn(MULTI_FACE_GROWTH) && world.getBlockState(infront).getBlock() != block) world.setBlockState(infront, Blocks.AIR.getDefaultState());
+					BlockEntity blockEntity = level.getBlockEntity(infront);
+					if (blockEntity != null) {
+						blockEntity.applyComponentsFromItemStack(itemStack);
+					}
 
-                    if (result.canGrow && (world.getBlockState(infront).isReplaceable() || world.getBlockState(infront).getBlock() == block)) {
-                        world.setBlockState(infront, blockState);
-                        world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
-                        setInhabited(world, infront);
-                        itemStack.setCount(itemStack.getCount() - 1);
-                    } else {
-                        world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                    }
-                    return;
-                }
+					BlockNameIntegration.place(level, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
+					setInhabited(level, infront);
+					itemStack.shrink(1);
+				} else {
+					level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0F, 1.0F);
+					return;
+				}
 
-                //Handle double places
-                if (secondBlockState != null) {
-                    //Get Position of second block
-                    BlockPos.Mutable secondInfrontMutable = infront.mutableCopy();
-                    BlockPos secondInfront = null;
-                    BlockPos checkPos = infront;
-                    BlockState checkState = blockState;
-                    if (blockState.getProperties().contains(Properties.BED_PART)) {
-                        secondInfront = secondInfrontMutable.offset(state.get(FACING));
-                    } else {
-                        if (blockState.get(Properties.DOUBLE_BLOCK_HALF).equals(DoubleBlockHalf.UPPER)) {
-                            secondInfront = secondInfrontMutable.offset(Direction.DOWN);
-                            checkPos = secondInfront;
-                            checkState = secondBlockState;
-                        } else {
-                            secondInfront = secondInfrontMutable.offset(Direction.UP);
-                        }
-                    }
+			} else {
+				DispenseItemBehavior dispenserBehavior = this.getDispenseMethod(level, itemStack);
+				if (dispenserBehavior != DispenseItemBehavior.NOOP) {
+					dispenserBlockEntity.setItem(i, dispenserBehavior.dispense(blockSource, itemStack));
+				}
+			}
 
-                    //Check if both are placable
-                    if (checkState.canPlaceAt(world,checkPos) && world.getBlockState(infront).isReplaceable() &&
-                            world.getBlockState(secondInfront).isReplaceable()){
-                        world.setBlockState(secondInfront, secondBlockState);
-                        world.setBlockState(infront, blockState);
-                        world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
-                        setInhabited(world, infront);
-                        itemStack.setCount(itemStack.getCount() - 1);
-                    } else {
-                        world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                    }
-                    return;
-                }
-
-
-                //Handle double slab
-                if (blockState.isIn(BlockTags.SLABS)){
-                    BlockState otherState = world.getBlockState(infront);
-                    if (otherState.getBlock() == block) {
-                        SlabType otherSlabType = otherState.get(Properties.SLAB_TYPE);
-                        if (otherSlabType != SlabType.DOUBLE && otherSlabType != blockState.get(Properties.SLAB_TYPE)) {
-                            world.setBlockState(infront, otherState.with(Properties.SLAB_TYPE, SlabType.DOUBLE));
-                            world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                            BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
-                            setInhabited(world, infront);
-                            itemStack.setCount(itemStack.getCount() - 1);
-                        } else {
-                            world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                        }
-                        return;
-                    }
-                }
-
-                // Handle all other place
-                if (blockState.canPlaceAt(world,infront) && world.getBlockState(infront).isReplaceable()) {
-                    world.setBlockState(infront, blockState);
-                    world.playSound(null, pos, placeSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                    if (block == Blocks.PLAYER_HEAD) {
-                        HeadPlacerIntegration.placeHead(world, infront, itemStack);
-                    }
-
-                    BlockEntity blockEntity = world.getBlockEntity(infront);
-                    if (blockEntity != null) blockEntity.readComponents(itemStack);
-
-                    BlockNameIntegration.place(world, infrontBlockState, blockState, infront, itemStack, prevComponentMap);
-                    setInhabited(world, infront);
-                    itemStack.setCount(itemStack.getCount() - 1);
-                } else {
-                    world.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                    return;
-                }
-
-
-            } else {
-                DispenserBehavior dispenserBehavior = this.getBehaviorForItem(world, itemStack);
-                if (dispenserBehavior != DispenserBehavior.NOOP) {
-                    dispenserBlockEntity.setStack(i, dispenserBehavior.dispense(blockPointer, itemStack));
-                }
-            }
-
-
-        }
-    }
+		}
+	}
 
 }

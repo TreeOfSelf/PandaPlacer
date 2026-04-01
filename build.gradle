@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version "${loom_version}"
+	id 'net.fabricmc.fabric-loom' version '1.16.0-alpha.16'
 	id 'maven-publish'
 }
 
@@ -8,6 +8,14 @@ group = project.maven_group
 
 base {
 	archivesName = project.archives_base_name
+}
+
+loom {
+	mods {
+		"panda-placer" {
+			sourceSet sourceSets.main
+		}
+	}
 }
 
 repositories {
@@ -20,20 +28,10 @@ repositories {
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	// https://maven.nucleoid.xyz/eu/pb4/polymer-core/
-	modImplementation include("eu.pb4:polymer-core:0.15.0+1.21.11")
-	// https://maven.nucleoid.xyz/eu/pb4/sgui/
-	modImplementation include("eu.pb4:sgui:1.11.0+1.21.9")
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	// https://maven.nucleoid.xyz/xyz/nucleoid/server-translations-api/
-	modImplementation include('xyz.nucleoid:server-translations-api:2.5.2+1.21.9-pre3')
-	modImplementation files('libs/panda-heads-1.1.0_1.21.11.jar')
-	modImplementation files('libs/panda-block-name-1.2.4_1.21.11.jar')
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation include("eu.pb4:polymer-core:0.16.0-pre.4+26.1")
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
 
 processResources {
@@ -44,18 +42,11 @@ processResources {
 	}
 }
 
-tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
-}
-
 java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
 	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
 }
 
 jar {
